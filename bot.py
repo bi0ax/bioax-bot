@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from lotus import *
 from market import *
+from faceit import *
 import asyncio
 bot = commands.Bot(command_prefix='!')
 time_now_disc = lambda: datetime.datetime.now() + datetime.timedelta(hours=4)
@@ -55,15 +56,39 @@ async def deimos(ctx):
 @bot.command()
 async def price(ctx, *, arg):
     i = Item(arg)
-    if i.get_plat() == "Error":
-        embed = discord.Embed(title="Error", description="Item not found", timestamp=time_now_disc(), color=discord.Colour.red())
-        await ctx.channel.send(embed=embed)
-    else:
+    if i.valid == True:
         embed = discord.Embed(title=f"{arg.title()}", description=f"Platinum: {str(i.get_plat())}", 
         timestamp=time_now_disc(), color=discord.Color.green())
         embed.set_footer(text="Prices are pulled from warframe.market")
         await ctx.channel.send(embed=embed)
+    else:
+        embed = discord.Embed(title="Error", description="Item not found", timestamp=time_now_disc(), color=discord.Colour.red())
+        await ctx.channel.send(embed=embed)
+        
 
+@bot.command(aliases=["faceit"])
+async def stats(ctx, arg):
+    username = arg.split("/")[-1]
+    player = FaceitUser(username)
+    if player.valid == True:
+        player_lifetime = player.get_lifetime_overall()
+        elo = player.player_json["games"]["csgo"]["faceit_elo"]
+        level = player.player_json["games"]["csgo"]["skill_level"]
+        avatar = player.player_json["avatar"]
+        kdr = player_lifetime["Average K/D Ratio"]
+        matches = player_lifetime["Matches"]
+        winrate = player_lifetime["Win Rate %"]
+        embed = discord.Embed(title=f"Stats for {username}", url=f"https://www.faceit.com/en/players/{username}/stats/csgo", color=discord.Color.from_rgb(255,85,0), timestamp=time_now_disc())
+        embed.set_thumbnail(url=avatar)
+        embed.add_field(name="Elo", value=f"{elo} (Level {level})", inline=False)
+        embed.add_field(name="K/D", value=kdr, inline=False)
+        embed.add_field(name="Matches", value=matches, inline=False)
+        embed.add_field(name="Win Rate", value=f"{winrate}%", inline=False)
+        embed.set_footer(text="Data is from FACEIT.com")
+        await ctx.channel.send(embed=embed)
+    else:
+        embed = discord.Embed(title="Error", description="User not found. If you entered a username, it must be case sensitive.", timestamp=time_now_disc(), color=discord.Colour.red())
+        await ctx.channel.send(embed=embed)
 
 
 #The @tasks.loop are automated messages of the time of day on the open worlds
