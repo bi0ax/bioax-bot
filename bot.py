@@ -3,6 +3,8 @@ from discord.ext import commands, tasks
 from lotus import *
 from market import *
 from faceit import *
+import os.path
+import subprocess
 import asyncio
 bot = commands.Bot(command_prefix='!')
 time_now_disc = lambda: datetime.datetime.now() + datetime.timedelta(hours=4)
@@ -87,7 +89,24 @@ async def stats(ctx, arg):
         embed.set_footer(text="Data is from FACEIT.com")
         await ctx.channel.send(embed=embed)
     else:
-        embed = discord.Embed(title="Error", description="User not found. If you entered a username, it must be case sensitive.", timestamp=time_now_disc(), color=discord.Colour.red())
+        embed = discord.Embed(title="Error", description="User not found. If you entered a username, it must be case sensitive.", 
+        timestamp=time_now_disc(), color=discord.Colour.red())
+        await ctx.channel.send(embed=embed)
+
+@bot.command(aliases=["fetch", "initialize"])
+async def pull(ctx, *, arg):
+    if not os.path.isfile(f"sherlock\\doxes\\{arg}.txt"):
+        subprocess.Popen(f"py sherlock\\sherlock.py {arg} -fo sherlock\\doxes", shell=True)
+        
+@bot.command(aliases=["doxx", "info", "dox"])
+async def drop(ctx, *, arg):
+    if os.path.isfile(f"sherlock\\doxes\\{arg}.txt"):
+        #sherlock_read = open(f"sherlock\\doxes\\{arg}.txt", "r")
+        #print(sherlock_read.read())
+        await ctx.channel.send(file=discord.File(f"sherlock\\doxes\\{arg}.txt"))
+    else:
+        embed = discord.Embed(title="Error", description="That person didn't exist. Use !pull to initialize the text file, and wait a bit.", 
+        color=discord.Color.red(), timestamp=time_now_disc())
         await ctx.channel.send(embed=embed)
 
 
