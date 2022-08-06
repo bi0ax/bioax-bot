@@ -1,4 +1,3 @@
-from pylotus import *
 import requests
 import datetime
 import json
