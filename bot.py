@@ -5,7 +5,7 @@ from market import *
 import asyncio
 bot = commands.Bot(command_prefix='!')
 time_now_disc = lambda: datetime.datetime.now() + datetime.timedelta(hours=4)
-days_directory = "C:\\Users\\justin\\OneDrive\\Desktop\\projects\\bot\\world_days"
+days_directory = "C:\\Users\\justin\\OneDrive\\Desktop\\projects\\bioax-bot\\world_days"
 channel = bot.get_channel(591342601961996290)
 
 @bot.event
