@@ -1,14 +1,20 @@
 import discord
 from discord.ext import commands, tasks
+from pathlib import Path
 from lotus import *
 from market import *
 from faceit import *
 import os.path
 import subprocess
 import asyncio
+
 bot = commands.Bot(command_prefix='!')
 time_now_disc = lambda: datetime.datetime.now() + datetime.timedelta(hours=4)
-channel_id = 591342601961996290 #channel you want your automated messages to be in
+data_folder = Path("bot-info/")
+channel_path = data_folder / "channel.txt"
+token_path = data_folder / "token.txt"
+channel_id = int(open(channel_path, "r").read()) #channel you want your automated messages to be in
+token = open(token_path, "r").read() #discord bot token stored in token.txt 
 
 @bot.event
 async def on_ready():
@@ -95,15 +101,15 @@ async def stats(ctx, arg):
 
 @bot.command(aliases=["fetch", "initialize"])
 async def pull(ctx, *, arg):
-    if not os.path.isfile(f"sherlock\\doxes\\{arg}.txt"):
-        subprocess.Popen(f"py sherlock\\sherlock.py {arg} -fo sherlock\\doxes", shell=True)
+    dox_path = Path(f"sherlock/doxes/{arg}.txt")
+    if not dox_path.exists():
+        subprocess.Popen(f"py sherlock/sherlock.py {arg} -fo sherlock/doxes", shell=True)
         
 @bot.command(aliases=["doxx", "info", "dox"])
 async def drop(ctx, *, arg):
-    if os.path.isfile(f"sherlock\\doxes\\{arg}.txt"):
-        #sherlock_read = open(f"sherlock\\doxes\\{arg}.txt", "r")
-        #print(sherlock_read.read())
-        await ctx.channel.send(file=discord.File(f"sherlock\\doxes\\{arg}.txt"))
+    dox_path = Path(f"sherlock/doxes/{arg}.txt")
+    if dox_path.exists():
+        await ctx.channel.send(file=discord.File(dox_path))
     else:
         embed = discord.Embed(title="Error", description="That person didn't exist. Use !pull to initialize the text file, and wait a bit.", 
         color=discord.Color.red(), timestamp=time_now_disc())
@@ -125,26 +131,28 @@ async def dm(ctx, *, args):
 @tasks.loop(seconds=60)
 async def eidolon_day():
     e = Eidolon()
-    eidolon_day_read = open("world_days\\eidolon_day.txt", "r")
+    eidolon_path = data_folder / "world-days/eidolon_day.txt"
+    eidolon_day_read = open(eidolon_path, "r")
     if eidolon_day_read.read() == e.get_day():
         print("same earth")
     else:
-        edw = open("world_days\\eidolon_day.txt", "w")
+        edw = open(eidolon_path, "w")
         edw.write(e.get_day())
         edw.close()
         print("updated earth")
         embed = discord.Embed(title="Plains of Eidolon", description=f"**State**: {e.get_day().capitalize()}\n**Time Left**: {e.eidolon['timeLeft']}", timestamp=time_now_disc())
-        channel = bot.get_channel(591342601961996290)
+        channel = bot.get_channel(channel_id)
         await channel.send(embed=embed)
 
 @tasks.loop(seconds=60.0)
 async def vallis_day():
     o = OrbVallis()
-    vallis_day_read = open("world_days\\orb_vallis_day.txt", "r")
+    orb_vallis_path = data_folder / "world-days/orb_vallis_day.txt"
+    vallis_day_read = open(orb_vallis_path, "r")
     if vallis_day_read.read() == o.get_day():
         print("same venus")
     else:
-        odw = open("world_days\\orb_vallis_day.txt", "w")
+        odw = open(orb_vallis_path, "w")
         odw.write(o.get_day())
         odw.close()
         print("updated venus")
@@ -155,11 +163,12 @@ async def vallis_day():
 @tasks.loop(seconds=60)
 async def cambion_day():
     c = CambionDrift()
-    cambion_day_read = open("world_days\\cambion_drift_day.txt", "r")
+    cambion_drift_path = data_folder / "world-days/cambion_drift_day.txt"
+    cambion_day_read = open(cambion_drift_path, "r")
     if cambion_day_read.read() == c.get_day():
         print("same deimos")
     else:
-        cdw = open("world_days\\cambion_drift_day.txt", "w")
+        cdw = open(cambion_drift_path, "w")
         cdw.write(c.get_day())
         cdw.close()
         print("updated deimos")
@@ -168,4 +177,4 @@ async def cambion_day():
         await channel.send(embed=embed)
 
 
-bot.run("MTAwMjU3NjUyMDA2NzQzNjYzNA.GJ4JbB.ZqyIDOnn_vVdDTO7_3_RM8bTaqySqwvDdpI5Y8")
+bot.run(token)
