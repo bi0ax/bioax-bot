@@ -1,5 +1,5 @@
 # Bioax's Discord Bot
-This discord bot uses the Warframe API, warframe.market API, and FACEIT API. 
+This discord bot uses the [Warframe API](https://docs.warframestat.us/), [warframe.market API](https://warframe.market/api_docs), [FACEIT API](https://developers.faceit.com/docs/auth/api-keys), and the [sherlock.py library](https://github.com/sherlock-project/sherlock).
 ## Commands
 ### Warframe Related
 !price [item]   -   returns price of thing from warframe.market  

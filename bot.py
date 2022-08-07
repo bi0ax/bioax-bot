@@ -109,11 +109,21 @@ async def drop(ctx, *, arg):
         color=discord.Color.red(), timestamp=time_now_disc())
         await ctx.channel.send(embed=embed)
 
+@bot.command()
+async def dm(ctx, *, args):
+    mention_string = args.split()[0]
+    user_id = int(mention_string[2:-1])
+    user = await bot.fetch_user(user_id)
+    if len(args.split()) > 1:
+        message = args.split(" ", 1)[1]
+        await user.send(message)
+    else:
+        await ctx.channel.send("There must be a message")
+
 
 #The @tasks.loop are automated messages of the time of day on the open worlds
-@tasks.loop(seconds=53.0)
+@tasks.loop(seconds=60)
 async def eidolon_day():
-    await asyncio.sleep(7)
     e = Eidolon()
     eidolon_day_read = open("world_days\\eidolon_day.txt", "r")
     if eidolon_day_read.read() == e.get_day():
@@ -127,9 +137,8 @@ async def eidolon_day():
         channel = bot.get_channel(591342601961996290)
         await channel.send(embed=embed)
 
-@tasks.loop(seconds=55.0)
+@tasks.loop(seconds=60.0)
 async def vallis_day():
-    await asyncio.sleep(5)
     o = OrbVallis()
     vallis_day_read = open("world_days\\orb_vallis_day.txt", "r")
     if vallis_day_read.read() == o.get_day():
@@ -143,9 +152,8 @@ async def vallis_day():
         channel = bot.get_channel(channel_id)
         await channel.send(embed=embed)
 
-@tasks.loop(seconds=54.0)
+@tasks.loop(seconds=60)
 async def cambion_day():
-    await asyncio.sleep(6)
     c = CambionDrift()
     cambion_day_read = open("world_days\\cambion_drift_day.txt", "r")
     if cambion_day_read.read() == c.get_day():
