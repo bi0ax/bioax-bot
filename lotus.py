@@ -1,6 +1,9 @@
 import requests
 import datetime
 import json
+import time
+from pathlib import Path
+from bs4 import BeautifulSoup
 time_now = datetime.datetime.now() + datetime.timedelta(hours=4)
 def is_expired(time):
         if datetime.datetime.now() > datetime.datetime.fromisoformat(time): #remember that there is Z at the end
@@ -36,7 +39,7 @@ class Nightwave:
     def get_expiry_time(self):
         return self.get_challenge_expiry().split("T")[1]
     def is_expired(self, index):
-        if datetime.datetime.now() > datetime.datetime.fromisoformat(nw.get_challenge_expiry(index)):
+        if datetime.datetime.now() > datetime.datetime.fromisoformat(self.get_challenge_expiry(index)):
             return True
         else:
             return False
@@ -104,6 +107,29 @@ class CambionDrift:
         if self.response.status_code != 200:
             return "Error"
         return self.cambion_drift["active"]
-nw = Nightwave()
-sortie = Sortie()
-eido = Eidolon()
+
+class Weapon():
+    def __init__(self, weapon_name):
+        weapon_data_path = Path("botinfo/weapon_data.txt")
+        weapon_data_read = open(weapon_data_path, "r")
+        self.all_weapon_data = json.loads(weapon_data_read.read())
+        self.weapon_stats = [weapon for weapon in self.all_weapon_data if weapon["name"] == weapon_name.title()][0]
+        self.weapon_attacks = self.weapon_stats["attacks"]
+    
+class Warframe():
+    def __init__(self, warframe_name):
+        self.warframe_name = warframe_name
+        warframe_data_path = Path("botinfo/warframe_data.txt")
+        warframe_data_read = open(warframe_data_path, "r")
+        self.all_warframe_data = json.loads(warframe_data_read.read())
+
+class ItemDrop:
+    def __init__(self, item_name):
+        self.item_name = item_name
+        self.formatted_item_name = self.item_name.replace(" ", "%20")
+        item_drop_response = requests.get(f"https://api.warframestat.us/drops/search/{self.formatted_item_name}")
+        self.item_drops = json.loads(item_drop_response.text)
+        self.item_found = True
+        if not self.item_drops:
+            self.item_found = False
+
