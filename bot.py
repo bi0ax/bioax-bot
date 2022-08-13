@@ -7,10 +7,11 @@ from faceit import *
 import os
 import subprocess
 import asyncio
+import platform
 
 intents = discord.Intents.all()
 intents.members = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='>', intents=intents)
 time_now_disc = lambda: datetime.datetime.now() + datetime.timedelta(hours=4) #gives me the current time
 data_folder = Path("botinfo/")
 startup = True
@@ -146,21 +147,15 @@ async def stats(ctx, user):
         timestamp=time_now_disc(), color=discord.Colour.red())
         await ctx.channel.send(embed=embed)
 
-@bot.command(aliases=["fetch", "initialize"])
+@bot.command(aliases=["fetch", "initialize", "dox", "doxx"])
 async def pull(ctx, *, username):
     dox_path = Path(f"sherlock/doxes/{username}.txt")
     if not dox_path.exists():
-        subprocess.Popen(f"py sherlock/sherlock.py {username} -fo sherlock/doxes", shell=True)
-        
-@bot.command(aliases=["doxx", "info", "dox"])
-async def drop(ctx, *, username):
-    dox_path = Path(f"sherlock/doxes/{username}.txt")
-    if dox_path.exists():
-        await ctx.channel.send(file=discord.File(dox_path))
-    else:
-        embed = discord.Embed(title="Error", description="That person didn't exist. Use !pull to initialize the text file, and wait a bit.", 
-        color=discord.Color.red(), timestamp=time_now_disc())
-        await ctx.channel.send(embed=embed)
+        if platform.system() == "Windows":
+            subprocess.run(f"py sherlock/sherlock.py {username} -fo sherlock/doxes", shell=False)
+        elif platform.system() == "Linux":
+            subprocess.run(f"python3 sherlock/sherlock.py {username} -fo sherlock/doxes", shell=False)
+    await ctx.channel.send(file=discord.File(dox_path))
 
 @bot.command()
 async def dm(ctx, *, username):
@@ -196,12 +191,11 @@ async def eidolon_day():
         channel_ready = False
     eidolon_path = data_folder / "worlddays/eidolon_day.txt"
     eidolon_day_read = open(eidolon_path, "r")
-    if eidolon_day_read.read() == e.get_day():
+    if eidolon_day_read.read() == e.get_day() and settings_json["day_message"] == "True":
         print("same earth")
     elif channel_ready and settings_json["day_message"] == "True":
-        edw = open(eidolon_path, "w")
-        edw.write(e.get_day())
-        edw.close()
+        with open(eidolon_path, "w") as edw:
+            edw.write(e.get_day())
         print("updated earth")
         embed = discord.Embed(title="Plains of Eidolon", description=f"**State**: {e.get_day().capitalize()}\n**Time Left**: {e.eidolon['timeLeft']}", timestamp=time_now_disc())
         channel = bot.get_channel(channel_id)
@@ -219,12 +213,11 @@ async def vallis_day():
         channel_ready = False
     orb_vallis_path = data_folder / "worlddays/orb_vallis_day.txt"
     vallis_day_read = open(orb_vallis_path, "r")
-    if vallis_day_read.read() == o.get_day():
+    if vallis_day_read.read() == o.get_day() and settings_json["day_message"] == "True":
         print("same venus")
     elif channel_ready and settings_json["day_message"] == "True":
-        odw = open(orb_vallis_path, "w")
-        odw.write(o.get_day())
-        odw.close()
+        with open(orb_vallis_path, "w") as odw:
+            odw.write(o.get_day())
         print("updated venus")
         embed = discord.Embed(title="Orb Vallis", description=f"**State**: {o.get_day().capitalize()}\n**Time Left**: {o.orb_vallis['timeLeft']}", timestamp=time_now_disc())
         channel = bot.get_channel(channel_id)
@@ -242,12 +235,11 @@ async def cambion_day():
         channel_ready = False
     cambion_drift_path = data_folder / "worlddays/cambion_drift_day.txt"
     cambion_day_read = open(cambion_drift_path, "r")
-    if cambion_day_read.read() == c.get_day():
+    if cambion_day_read.read() == c.get_day() and settings_json["day_message"] == "True":
         print("same deimos")
     elif channel_ready and settings_json["day_message"] == "True":
-        cdw = open(cambion_drift_path, "w")
-        cdw.write(c.get_day())
-        cdw.close()
+        with open(cambion_drift_path, "w") as cdw:
+            cdw.write(c.get_day())
         print("updated deimos")
         embed = discord.Embed(title="Cambion Drift", description=f"**State**: {c.get_day().capitalize()}\n**Time Left**: {c.cambion_drift['timeLeft']}", timestamp=time_now_disc())
         channel = bot.get_channel(channel_id)
