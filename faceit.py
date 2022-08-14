@@ -2,6 +2,7 @@ import requests
 import json
 import statistics
 from line_profiler import LineProfiler
+import concurrent.futures
 api_key = "466218a2-265f-4662-8fff-7618d8d31178"
 headers = {"accept":"application/json", "Authorization": "Bearer {}".format(api_key)}
 class FaceitUser:
@@ -26,7 +27,7 @@ class FaceitUser:
         return [x["match_id"] for x in self.matches["items"]]
     def get_stats(self, count=20):
         self.user_stats = []
-        for x in self.get_matches(count):
+        def get_match_stats():
             self.response_match_stats = requests.get(f"{self.matches_url}/{x}/stats", headers=headers)
             self.match_stats = json.loads(self.response_match_stats.text)
             self.match_rounds = self.match_stats["rounds"]
@@ -34,7 +35,11 @@ class FaceitUser:
             self.match_team_stats_added = self.match_teams[0]["players"] + self.match_teams[1]["players"] #list of players, which has a key inside each dict
             self.user_stats_temp = [(y["player_stats"]["K/D Ratio"], y["player_stats"]["K/R Ratio"]) for y in self.match_team_stats_added if y["player_id"] == self.player_id]
             #each element above is (K/D, K/R)
-            self.user_stats.extend(self.user_stats_temp)    
+            self.user_stats.extend(self.user_stats_temp)
+        with concurrent.futures.ThreadPoolExecutor() as executor:    
+            for x in self.get_matches(count):
+                executor.submit(get_match_stats)
+            
         return self.user_stats
     def get_KD(self,stats): #stats must be dict from get_stats()
         return statistics.mean([float(x[0]) for x in stats])
@@ -52,3 +57,6 @@ class FaceitUser:
         gls = self.get_lifetime_stats()
         self.best_maps = sorted(gls["segments"], key=lambda x: float(x["stats"]["Average K/D Ratio"]), reverse=True)
         return self.best_maps[0] if gls != "Error" else None
+
+f = FaceitUser("bi0ax")
+print(f.get_stats())
