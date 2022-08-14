@@ -5,6 +5,7 @@ from lotus import *
 from market import *
 from faceit import *
 import os
+import statistics
 import subprocess
 import asyncio
 import platform
@@ -40,7 +41,9 @@ async def settings(ctx, *settings):
         await ctx.channel.send("Not admin")
         return
     if not settings:
-        await ctx.channel.send("Here are some settings...")
+        embed = discord.Embed(title="**Settings**", description="!settings day_message <True/False> \n !settings day_channel <channel id>", 
+        timestamp=time_now_disc())
+        await ctx.channel.send(embed=embed)
         return 
     option = settings[0]
     if option == "day_message":
@@ -107,9 +110,12 @@ async def price(ctx, *, item):
     else:
         embed = discord.Embed(title="Error", description="Item not found", timestamp=time_now_disc(), color=discord.Colour.red())
         await ctx.channel.send(embed=embed)
-        
-#create price error here LATER
 
+@price.error
+async def price_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title="Error", description="Please input something \n!price <item>", timestamp=time_now_disc(), color=discord.Color.red())
+        await ctx.channel.send(embed=embed)
 @bot.command()
 async def drops(ctx, *, item):
     i = ItemDrop(item)
@@ -122,7 +128,7 @@ async def drops(ctx, *, item):
     await ctx.channel.send(embed=embed)
 
 
-@bot.command(aliases=["faceit"])
+@bot.command(aliases=["faceit", "lifetime"])
 async def stats(ctx, user):
     username = user.split("/")[-1]
     player = FaceitUser(username)
@@ -134,7 +140,7 @@ async def stats(ctx, user):
         kdr = player_lifetime["Average K/D Ratio"]
         matches = player_lifetime["Matches"]
         winrate = player_lifetime["Win Rate %"]
-        embed = discord.Embed(title=f"Stats for {username}", url=f"https://www.faceit.com/en/players/{username}/stats/csgo", color=discord.Color.from_rgb(255,85,0), timestamp=time_now_disc())
+        embed = discord.Embed(title=f"Lifetime Stats for {username}", url=f"https://www.faceit.com/en/players/{username}/stats/csgo", color=discord.Color.from_rgb(255,85,0), timestamp=time_now_disc())
         embed.set_thumbnail(url=avatar)
         embed.add_field(name="Elo", value=f"{elo} (Level {level})", inline=False)
         embed.add_field(name="K/D", value=kdr, inline=False)
@@ -147,7 +153,53 @@ async def stats(ctx, user):
         timestamp=time_now_disc(), color=discord.Colour.red())
         await ctx.channel.send(embed=embed)
 
-@bot.command(aliases=["fetch", "initialize", "dox", "doxx"])
+@stats.error
+async def stats_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title="Error", description="Please input something \n!stats/faceit/lifetime <nickname/url>", 
+        timestamp=time_now_disc(), color=discord.Color.red())
+        await ctx.channel.send(embed=embed)
+
+@bot.command(aliases=["statspast"])
+async def faceitpast(ctx, *args):
+    username = args[0].split("/")[-1]
+    player = FaceitUser(username)
+    matches = int(args[1]) if len(args) == 2 else 20
+    if player.valid == True:
+        elo = player.player_json["games"]["csgo"]["faceit_elo"]
+        avatar = player.player_json["avatar"]
+        stats = player.get_stats(matches)
+        average_kd = statistics.mean([float(x[0]) for x in stats])
+        average_kd = str(round(average_kd, 2))
+        average_kr = statistics.mean([float(x[1]) for x in stats])
+        average_kr = str(round(average_kr, 2))
+        average_kills = statistics.mean([int(x[2]) for x in stats])
+        average_kills = str(int(average_kills))
+        average_hs = statistics.mean([int(x[3]) for x in stats])
+        average_hs = str(int(average_hs))
+        embed = discord.Embed(title=f"Stats for {username} Over the Past {str(matches)} Matches", description=f"[Profile](https://www.faceit.com/en/players/{username}/stats/csgo)",
+        color=discord.Color.from_rgb(255,85,0), timestamp=time_now_disc())
+        embed.set_thumbnail(url=avatar)
+        embed.add_field(name="Elo", value=elo, inline=False)
+        embed.add_field(name="K/D", value=average_kd, inline=False)
+        embed.add_field(name="K/R", value=average_kr, inline=False)
+        embed.add_field(name="Average Kills", value=average_kills, inline=False)
+        embed.add_field(name="Average HS%", value=average_hs, inline=False)
+        embed.set_footer(text="Data is from FACEIT.com")
+        await ctx.channel.send(embed=embed)
+    else:
+        embed = discord.Embed(title="Error", description="User not found. If you entered a username, it must be case sensitive.",
+        timestamp=time_now_disc(), color=discord.Color.red())
+        await ctx.channel.send(embed=embed)
+
+@faceitpast.error
+async def faceitpast_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title="Error", description="Please input something \n!faceitpast/statspast <nickname/url> [matches (20 is default)]", 
+        timestamp=time_now_disc(), color=discord.Color.red())
+        await ctx.channel.send(embed=embed)
+
+@bot.command(aliases=["fetch", "dox", "doxx"])
 async def pull(ctx, *, username):
     dox_path = Path(f"sherlock/doxes/{username}.txt")
     if not dox_path.exists():
@@ -157,6 +209,11 @@ async def pull(ctx, *, username):
             subprocess.run(f"python3 sherlock/sherlock.py {username} -fo sherlock/doxes", shell=False)
     await ctx.channel.send(file=discord.File(dox_path))
 
+@pull.error
+async def pull_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        embed = discord.Embed(title="Error", description="Please input something \n!pull/doxx/dox/fetch <username>", 
+        timestamp=time_now_disc(), color=discord.Color.red())
 @bot.command()
 async def dm(ctx, *, username):
     mention_string = username.split()[0]
