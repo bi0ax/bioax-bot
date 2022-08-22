@@ -1,3 +1,4 @@
+from json import JSONDecodeError
 import discord
 from discord.ext import commands, tasks
 from pathlib import Path
@@ -9,6 +10,7 @@ import statistics
 import subprocess
 import asyncio
 import platform
+import concurrent.futures 
 
 intents = discord.Intents.all()
 intents.members = True
@@ -27,6 +29,8 @@ async def on_ready():
     eidolon_day.start()
     vallis_day.start()
     cambion_day.start()
+    #update_best_ayatan.start()
+    #update_augment_data.start()
 
 @bot.command()
 async def debug(ctx, *, args):
@@ -101,9 +105,9 @@ async def deimos(ctx):
 
 @bot.command()
 async def price(ctx, *, item):
-    i = Item(item)
+    i = MarketItem(item)
     if i.valid == True:
-        embed = discord.Embed(title=f"{item.title()}", description=f"Platinum: {str(i.get_plat())}", 
+        embed = discord.Embed(title=f"{item.title()}", description=f"**Platinum:** {str(i.plat)} \n**Volume:** {str(i.volume)}", 
         timestamp=time_now_disc(), color=discord.Color.green())
         embed.set_footer(text="Prices are pulled from warframe.market")
         await ctx.channel.send(embed=embed)
@@ -116,6 +120,7 @@ async def price_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title="Error", description="Please input something \n!price <item>", timestamp=time_now_disc(), color=discord.Color.red())
         await ctx.channel.send(embed=embed)
+
 @bot.command()
 async def drops(ctx, *, item):
     i = ItemDrop(item)
@@ -127,6 +132,34 @@ async def drops(ctx, *, item):
         embed.add_field(name=x["item"], value=f"Place: {x['place']} \n Chance: {str(x['chance'])}% ({x['rarity']})", inline=(False if len(i.item_drops) <= 6 else True))
     await ctx.channel.send(embed=embed)
 
+@bot.command()
+async def bestayatan(ctx):
+    best_ayatan_read = open(Path("botinfo/warframedata/best_ayatan.txt"), "r")
+    best_ayatan = json.load(best_ayatan_read)
+    ayatan_data_read = open(Path("botinfo/warframedata/ayatan_data.txt"), "r")
+    ayatan_data = json.load(ayatan_data_read)
+    description = ""
+    for index, x in enumerate(best_ayatan):
+        description += f"**{index+1}.** {x} ({ayatan_data[x]} Endo) - {int(best_ayatan[x])} Endo per Plat \n"
+    embed = discord.Embed(title="Best Ayatan Treasures for Platinum", description=description, 
+    timestamp=time_now_disc())
+    await ctx.channel.send(embed=embed)
+
+@bot.command()
+async def bestaugments(ctx):
+    best_augment_read = open(Path("botinfo/warframedata/augment_data.txt"), "r")
+    best_augment = json.load(best_augment_read)
+    description = ""
+    for index, x in enumerate(best_augment):
+        description += f"**{index+1}.** {x} - {int(best_augment[x])} Plat \n"
+    embed = discord.Embed(title="Best Augment Mods for Platinum", description=description, timestamp=time_now_disc())
+    await ctx.channel.send(embed=embed)
+
+@bot.command()
+async def amps(ctx):
+    embed = discord.Embed(title=" ")
+    embed.set_image(url="https://vignette.wikia.nocookie.net/warframe/images/c/cd/AmpConvention.jpg/revision/latest/scale-to-width-down/700?cb=20190415144538")
+    await ctx.channel.send(embed=embed)
 
 @bot.command(aliases=["faceit", "lifetime"])
 async def stats(ctx, user):
@@ -206,7 +239,7 @@ async def pull(ctx, *, username):
         if platform.system() == "Windows":
             subprocess.run(f"py sherlock/sherlock.py {username} -fo sherlock/doxes", shell=False)
         elif platform.system() == "Linux":
-            subprocess.run(f"python3 sherlock/sherlock.py {username} -fo sherlock/doxes", shell=False)
+            subprocess.run(f"python3 sherlock/sherlock.py {username} -fo sherlock/doxes", shell=True)
     await ctx.channel.send(file=discord.File(dox_path))
 
 @pull.error
@@ -214,6 +247,7 @@ async def pull_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title="Error", description="Please input something \n!pull/doxx/dox/fetch <username>", 
         timestamp=time_now_disc(), color=discord.Color.red())
+
 @bot.command()
 async def dm(ctx, *, username):
     mention_string = username.split()[0]
@@ -231,8 +265,12 @@ async def dmall(ctx, *, message):
         await ctx.channel.send("Not admin")
         return
     all_members = ctx.guild.members
-    for x in all_members:
-        await x.send(message)
+    for member in all_members:
+        user = await bot.fetch_user(member.id)
+        try:
+            await user.send(message)
+        except:
+            pass
 
 
 #The @tasks.loop are automated messages of the time of day on the open worlds
@@ -301,6 +339,40 @@ async def cambion_day():
         embed = discord.Embed(title="Cambion Drift", description=f"**State**: {c.get_day().capitalize()}\n**Time Left**: {c.cambion_drift['timeLeft']}", timestamp=time_now_disc())
         channel = bot.get_channel(channel_id)
         await channel.send(embed=embed)
+
+@tasks.loop(seconds=1800)
+async def update_best_ayatan():
+    items = Items()
+    ayatan_prices = items.ayatan_prices
+    ratios = {}
+    def add_ratio(ayatan, endo):
+        plat = MarketItem(ayatan).get_plat()
+        ratios[ayatan] = endo/plat
+    for ayatan, endo in ayatan_prices.items():
+        add_ratio(ayatan, endo)
+    ratios = {ayatan_name: endo for ayatan_name, endo in sorted(ratios.items(), key=lambda x: x[1], reverse=True)}
+    with open(Path("botinfo/warframedata/best_ayatan.txt"), "w") as ratio_write:
+        ratio_write.write(json.dumps(ratios))
+        print("done writing ayatan ratios")
+
+@tasks.loop(seconds=43200)
+async def update_augment_data():
+    mods = Mods()
+    all_augments = mods.all_augments
+    prices = {}
+    for augment in all_augments:
+        mi = MarketItem(augment["name"])
+        plat = mi.plat
+        if mi.volume >= 10:
+            prices[augment["name"]] = plat
+            print(augment["name"] + " added")
+        else:
+            print(augment["name"] + " not enough")
+        await asyncio.sleep(0.34)
+    prices = {mod_name: price for mod_name, price in sorted(prices.items(), key=lambda x: x[1], reverse=True)}
+    with open(Path("botinfo/warframedata/augment_data.txt"), "w") as price_write:
+        price_write.write(json.dumps(prices))
+        print("done writing augment prices")
 
 if __name__ == "__main__":
     bot.run(token)

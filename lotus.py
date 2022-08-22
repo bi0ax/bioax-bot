@@ -4,6 +4,7 @@ import json
 import time
 from pathlib import Path
 from bs4 import BeautifulSoup
+from market import *
 time_now = datetime.datetime.now() + datetime.timedelta(hours=4)
 def is_expired(time):
         if datetime.datetime.now() > datetime.datetime.fromisoformat(time): #remember that there is Z at the end
@@ -17,6 +18,9 @@ def time_left(time):
 class Nightwave:
     def __init__(self):
         self.response = requests.get("https://api.warframestat.us/pc/nightwave/?language=en")
+        self.valid = True
+        if self.response.status_code != 200:
+            self.valid = False
         self.current_nightwave = json.loads(self.response.text)
         self.current_nightwave_challenges = json.loads(self.response.text)["activeChallenges"]
         self.possible_nightwave_challenges = json.loads(self.response.text)["possibleChallenges"]
@@ -108,20 +112,36 @@ class CambionDrift:
             return "Error"
         return self.cambion_drift["active"]
 
-class Weapon():
+class Weapon:
     def __init__(self, weapon_name):
-        weapon_data_path = Path("botinfo/weapon_data.txt")
+        weapon_data_path = Path("botinfo/warframedata/weapon_data.txt")
         weapon_data_read = open(weapon_data_path, "r")
         self.all_weapon_data = json.loads(weapon_data_read.read())
         self.weapon_stats = [weapon for weapon in self.all_weapon_data if weapon["name"] == weapon_name.title()][0]
         self.weapon_attacks = self.weapon_stats["attacks"]
     
-class Warframe():
+class Warframe:
     def __init__(self, warframe_name):
         self.warframe_name = warframe_name
-        warframe_data_path = Path("botinfo/warframe_data.txt")
+        warframe_data_path = Path("botinfo/warframedata/warframe_data.txt")
         warframe_data_read = open(warframe_data_path, "r")
         self.all_warframe_data = json.loads(warframe_data_read.read())
+
+class Mods:
+    def __init__(self):
+        mod_data_path = Path("botinfo/warframedata/mod_data.txt")
+        warframe_data_read = open(mod_data_path, "r")
+        self.all_mod_data = json.load(warframe_data_read)
+        self.all_augments = [x for x in self.all_mod_data if "isAugment" in x.keys() and x["isAugment"] == True]
+        self.all_primed = [x for x in self.all_mod_data if x['name'].startswith("Primed")]
+
+class Mod:
+    def __init__(self, mod_name):
+        self.mod_name = mod_name
+        mod_data_path = Path("botinfo/warframedata/mod_data.txt")
+        warframe_data_read = open(mod_data_path, "r")
+        self.all_mod_data = json.load(warframe_data_read)
+        self.mod = [x for x in self.all_mod_data if x["name"] == mod_name.title()][0]
 
 class ItemDrop:
     def __init__(self, item_name):
@@ -133,3 +153,10 @@ class ItemDrop:
         if not self.item_drops:
             self.item_found = False
 
+class Items:
+    def __init__(self):
+        item_data_path = Path("botinfo/warframedata/item_data.txt")
+        item_data_read = open(item_data_path, "r")
+        self.all_item_data = json.load(item_data_read)
+        self.all_ayatan = [x for x in self.all_item_data if x["name"].startswith("Ayatan")]
+        self.ayatan_prices = json.load(open(Path("botinfo/warframedata/ayatan_data.txt"), "r"))

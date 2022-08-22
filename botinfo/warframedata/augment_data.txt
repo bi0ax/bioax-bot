@@ -1,0 +1,1 @@
+{"Reactive Storm": 13, "Shock Trooper": 13.0, "Accumulating Whipclaw": 12, "Razorwing Blitz": 12, "Venom Dose": 12.0, "Hall Of Malevolence": 11.5, "Greedy Pull": 11, "Despoil": 10.0, "Explosive Legerdemain": 10, "Pilfering Strangledome": 10}

@@ -1,0 +1,1 @@
+{"Ayatan Amber Star": 100, "Ayatan Anasa Sculpture": 3450, "Ayatan Ayr Sculpture": 1425, "Ayatan Cyan Star": 50, "Ayatan Hemakara Sculpture": 2600, "Ayatan Kitha Sculpture": 3000, "Ayatan Orta Sculpture": 2700, "Ayatan Piv Sculpture": 1725, "Ayatan Sah Sculpture": 1500, "Ayatan Valana Sculpture": 1575, "Ayatan Vaya Sculpture": 1800, "Ayatan Zambuka Sculpture": 2600}
