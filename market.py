@@ -36,7 +36,7 @@ class MarketItem:
             self.valid = False
         self.statistics = json.loads(self.market_response.text) if self.valid else None
         self.yesterday_stats = self.statistics["payload"]["statistics_closed"]["90days"][-1] if self.statistics else None
-        self.ninety_day_stats = self.statistsics["payload"]["statistics_closed"]["90days"] if self.statistics else None
+        self.ninety_day_stats = self.statistics["payload"]["statistics_closed"]["90days"] if self.statistics else None
         self.plat = self.yesterday_stats["median"] if self.statistics else 0
         self.volume = self.yesterday_stats["volume"] if self.statistics else 0
     def get_plat(self):
@@ -48,7 +48,6 @@ class MarketItem:
             return 0
         volumes = [int(self.ninety_day_stats[x]["volume"]) for x in range(-1, days*-1, -1)] 
         return statistics.mean(volumes)            
-
 
 
 

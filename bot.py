@@ -5,6 +5,7 @@ from pathlib import Path
 from lotus import *
 from market import *
 from faceit import *
+from socialpuller.websitesearch import *
 import os
 import statistics
 import subprocess
@@ -234,12 +235,10 @@ async def faceitpast_error(ctx, error):
 
 @bot.command(aliases=["fetch", "dox", "doxx"])
 async def pull(ctx, *, username):
-    dox_path = Path(f"sherlock/doxes/{username}.txt")
+    dox_path = Path(f"socialpuller/downloads/{username}.txt")
     if not dox_path.exists():
-        if platform.system() == "Windows":
-            subprocess.run(f"py sherlock/sherlock.py {username} -fo sherlock/doxes", shell=False)
-        elif platform.system() == "Linux":
-            subprocess.run(f"python3 sherlock/sherlock.py {username} -fo sherlock/doxes", shell=True)
+        search_all(username)
+    print("Done searching " + username)
     await ctx.channel.send(file=discord.File(dox_path))
 
 @pull.error
