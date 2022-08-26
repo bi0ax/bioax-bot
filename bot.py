@@ -12,6 +12,7 @@ import subprocess
 import asyncio
 import platform
 import concurrent.futures 
+import aiohttp
 
 intents = discord.Intents.all()
 intents.members = True
@@ -246,6 +247,24 @@ async def pull_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         embed = discord.Embed(title="Error", description="Please input something \n!pull/doxx/dox/fetch <username>", 
         timestamp=time_now_disc(), color=discord.Color.red())
+
+@bot.command(aliases=["geolocate"])
+async def locate(ctx, ip):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://ip-api.com/json/{ip}") as response:
+            if response.status != 200:
+                return
+            ip_data = await response.json()
+            del ip_data["status"]
+            del ip_data["query"]
+            del ip_data["region"]
+            del ip_data["countryCode"]
+            desc = ""
+            for key, value in ip_data.items():
+                desc += f"**{key.title()}:** {str(value)}\n"
+            embed = discord.Embed(title=f"Geolocation Data for {ip}", description=desc,
+            timestamp=time_now_disc(), color=discord.Color.green())
+            await ctx.channel.send(embed=embed)
 
 @bot.command()
 async def dm(ctx, *, username):

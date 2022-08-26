@@ -1588,8 +1588,7 @@
     "username_unclaimed": "noonewouldeverusethis77777"
   },
   "Reddit": {
-    "errorMsg": "Sorry, nobody on Reddit goes by that name.",
-    "errorType": "message",
+    "errorType": "status_code",
     "headers": {
       "accept-language": "en-US,en;q=0.9"
     },
